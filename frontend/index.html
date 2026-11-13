@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TERRAFOOD · Fuego & Botánica | Alta Cocina Contemporánea</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#0A0B0E',
+            charcoal: '#12141C',
+            gold: {
+              300: '#F3E5AB',
+              400: '#E5C158',
+              500: '#D4AF37',
+              600: '#AA8C2C',
+            },
+            ember: '#C85A32'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- React 18 & Babel Standalone -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #0A0B0E;
+      color: #F4F4F6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    .font-editorial {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+    }
+    .glass-panel {
+      background: rgba(18, 20, 28, 0.78);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(212, 175, 55, 0.18);
+    }
+    .glass-card {
+      background: linear-gradient(145deg, rgba(24, 27, 38, 0.9), rgba(14, 16, 22, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover {
+      border-color: rgba(212, 175, 55, 0.45);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(212, 175, 55, 0.15);
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #FFF3D1 0%, #D4AF37 50%, #AA8C2C 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-btn {
+      background: linear-gradient(135deg, #E5C158 0%, #D4AF37 50%, #B5902B 100%);
+      color: #0A0B0E;
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+    .gold-btn:hover {
+      filter: brightness(1.08);
+      box-shadow: 0 8px 25px -4px rgba(212, 175, 55, 0.45);
+      transform: translateY(-1px);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0B0E;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #262936;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #D4AF37;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // Fallback dish image in case an external photo fails to load
+    const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80";
+
+    function formatCurrency(val) {
+      return `$${Number(val || 0).toFixed(2)} USD`;
+    }
+
+    // ==================== PANTALLA DE LOGIN / REGISTRO ====================
+    function AuthScreen({ onAuthenticated }) {
+      const [mode, setMode] = useState("login"); // "login" | "register"
+      const [fullName, setFullName] = useState("");
+      const [email, setEmail] = useState("vip@terrafood.com");
+      const [password, setPassword] = useState("Terrafood2026!");
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState("");
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+        try {
+          const endpoint = mode === "login" ? "/api/v1/auth/login" : "/api/v1/auth/register";
+          const body = mode === "login"
+            ? { email, password }
+            : { full_name: fullName, email, password };
+
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.detail || "Error al autenticar usuario.");
+          }
+          onAuthenticated(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleQuickVipLogin = async () => {
+        setError("");
+        setLoading(true);
+        try {
+          const res = await fetch("/api/v1/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: "vip@terrafood.com", password: "Terrafood2026!" }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "No se pudo iniciar sesión VIP.");
+          onAuthenticated(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen relative flex items-center justify-center px-4 py-12 overflow-hidden">
+          {/* Background Image & Luxury Vignette */}
+          <div
+            className="absolute inset-0 bg-cover bg-center scale-105 transition-transform duration-1000"
+            style={{
+              backgroundImage: `url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=2000&q=85')`,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-obsidian/90 via-obsidian/85 to-obsidian/95" />
+          <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-ember/15 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl border border-gold-500/25 glass-panel">
+            {/* Columna Izquierda: Editorial de Marca */}
+            <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-between bg-gradient-to-br from-charcoal/90 via-obsidian/90 to-black/90 border-b lg:border-b-0 lg:border-r border-white/10">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs uppercase tracking-[0.2em] mb-6">
+                  <span>★ Guía Michelin · OpenSpec Driven</span>
+                </div>
+                <h1 className="font-editorial text-5xl md:text-6xl font-bold tracking-tight gold-gradient-text leading-none">
+                  TERRAFOOD
+                </h1>
+                <p className="font-editorial italic text-2xl text-gold-300/90 mt-1 tracking-wide">
+                  Fuego, Brasa & Botánica de Autor
+                </p>
+                <p className="text-gray-300/85 text-sm leading-relaxed mt-6">
+                  Bienvenido a la experiencia gastronómica digital de <strong className="text-white">TERRAFOOD</strong>.
+                  Explora nuestra colección de <span className="text-gold-400">Platos Fuertes a la leña</span> y{" "}
+                  <span className="text-gold-400">Postres de Alta Repostería</span>, personaliza tu comanda y almacena
+                  tus pedidos en tiempo real.
+                </p>
+              </div>
+
+              <div className="mt-8 space-y-4">
+                <div className="grid grid-cols-3 gap-3 pt-6 border-t border-white/10 text-center">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="font-editorial text-2xl font-bold text-gold-400">12</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wider">Creaciones</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="font-editorial text-2xl font-bold text-gold-400">OpenSpec</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wider">OpenAPI 3.1</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <div className="font-editorial text-2xl font-bold text-gold-400">SQLite</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wider">Persistencia</div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gold-500/10 border border-gold-500/25 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-gold-400">
+                      Credenciales Demo Pre-cargadas
+                    </div>
+                    <div className="text-xs text-gray-300 mt-0.5">
+                      Email: <code className="text-white">vip@terrafood.com</code> · Clave: <code className="text-white">Terrafood2026!</code>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleQuickVipLogin}
+                    disabled={loading}
+                    className="px-3.5 py-2 rounded-xl bg-gold-500/20 hover:bg-gold-500/30 border border-gold-400/40 text-gold-300 text-xs font-semibold whitespace-nowrap transition"
+                  >
+                    Acceso VIP 1-Click →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Columna Derecha: Formulario de Acceso / Registro */}
+            <div className="lg:col-span-6 p-8 md:p-12 flex flex-col justify-center">
+              <div className="flex rounded-xl bg-black/50 p-1 border border-white/10 mb-8">
+                <button
+                  type="button"
+                  onClick={() => { setMode("login"); setError(""); }}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition ${
+                    mode === "login"
+                      ? "bg-gold-500 text-obsidian font-semibold shadow"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Iniciar Sesión
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("register");
+                    setError("");
+                    setEmail("");
+                    setPassword("");
+                  }}
+                  className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition ${
+                    mode === "register"
+                      ? "bg-gold-500 text-obsidian font-semibold shadow"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Crear Cuenta Nueva
+                </button>
+              </div>
+
+              <h2 className="font-editorial text-3xl font-semibold text-white mb-1">
+                {mode === "login" ? "Bienvenido de vuelta" : "Registro de Comensal"}
+              </h2>
+              <p className="text-sm text-gray-400 mb-6">
+                {mode === "login"
+                  ? "Ingresa tus credenciales para acceder a la carta y gestionar tus pedidos."
+                  : "Crea tu perfil para ordenar platos fuertes y postres de autor."}
+              </p>
+
+              {error && (
+                <div className="mb-5 p-3.5 rounded-xl bg-red-500/15 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === "register" && (
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                      Nombre Completo
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Sofía Mendoza"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-white placeholder-gray-500 focus:outline-none focus:border-gold-400 text-sm"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-white placeholder-gray-500 focus:outline-none focus:border-gold-400 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                    Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={4}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/15 text-white placeholder-gray-500 focus:outline-none focus:border-gold-400 text-sm"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-xl gold-btn text-sm uppercase tracking-wider mt-2 shadow-lg"
+                >
+                  {loading
+                    ? "Verificando credenciales..."
+                    : mode === "login"
+                    ? "Entrar al Restaurante"
+                    : "Registrarme y Entrar"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==================== TARJETA DE PLATILLO ====================
+    function DishCard({ dish, onAdd }) {
+      const [customNote, setCustomNote] = useState("");
+      const [showNoteInput, setShowNoteInput] = useState(false);
+      const [addedPulse, setAddedPulse] = useState(false);
+
+      const handleAddClick = () => {
+        onAdd(dish, 1, customNote);
+        setCustomNote("");
+        setShowNoteInput(false);
+        setAddedPulse(true);
+        setTimeout(() => setAddedPulse(false), 900);
+      };
+
+      const isMain = dish.category === "platos_fuertes";
+
+      return (
+        <div className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between group">
+          <div>
+            {/* Imagen con zoom suave y badges */}
+            <div className="relative h-60 overflow-hidden bg-charcoal">
+              <img
+                src={dish.image_url}
+                alt={dish.name}
+                onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-obsidian/20 to-transparent" />
+
+              {/* Badge superior izquierdo */}
+              <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-obsidian/85 text-gold-400 border border-gold-500/40 backdrop-blur-md">
+                  ✦ {dish.badge}
+                </span>
+              </div>
+
+              {/* Categoría tag superior derecho */}
+              <div className="absolute top-3.5 right-3.5">
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md border ${
+                  isMain
+                    ? "bg-amber-950/80 text-amber-300 border-amber-500/30"
+                    : "bg-rose-950/80 text-rose-200 border-rose-400/30"
+                }`}>
+                  {isMain ? "🔥 Plato Fuerte" : "🍯 Postre de Autor"}
+                </span>
+              </div>
+
+              {/* Precio flotante en esquina inferior derecha */}
+              <div className="absolute bottom-3 right-3.5 px-3.5 py-1.5 rounded-xl bg-obsidian/90 border border-gold-500/40 backdrop-blur-md">
+                <span className="font-editorial text-2xl font-bold text-gold-400">
+                  ${dish.price.toFixed(2)}
+                </span>
+                <span className="text-[10px] text-gray-400 ml-1">USD</span>
+              </div>
+
+              {/* Rating & Tiempo */}
+              <div className="absolute bottom-3 left-3.5 flex items-center gap-3 text-xs text-gray-200">
+                <span className="flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                  <span className="text-gold-400">★</span> {dish.rating.toFixed(1)}
+                </span>
+                <span className="bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                  ⏱ {dish.prep_time_min} min
+                </span>
+                <span className="bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                  {dish.calories} kcal
+                </span>
+              </div>
+            </div>
+
+            {/* Contenido del platillo */}
+            <div className="p-5">
+              <div className="text-[11px] uppercase tracking-widest text-gold-400/90 font-medium mb-1">
+                {dish.subtitle}
+              </div>
+              <h3 className="font-editorial text-2xl font-bold text-white leading-snug group-hover:text-gold-300 transition-colors">
+                {dish.name}
+              </h3>
+              <p className="text-gray-300/80 text-xs leading-relaxed mt-2.5 line-clamp-3">
+                {dish.description}
+              </p>
+
+              {/* Maridaje sugerido */}
+              <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-gray-400">
+                <span className="text-gold-400 font-semibold">🍷 Maridaje:</span>
+                <span className="truncate">{dish.pairing}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Acciones e input de nota al chef */}
+          <div className="px-5 pb-5 pt-1">
+            {showNoteInput && (
+              <div className="mb-3">
+                <input
+                  type="text"
+                  placeholder="Ej. Término medio, salsa aparte, sin nuez..."
+                  value={customNote}
+                  onChange={(e) => setCustomNote(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-gold-500/30 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-gold-400"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowNoteInput(!showNoteInput)}
+                className="px-3 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-xs text-gray-300 transition"
+                title="Personalizar o agregar nota para el Chef"
+              >
+                {showNoteInput ? "Ocultar nota" : "✎ Nota al Chef"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddClick}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider font-semibold transition flex items-center justify-center gap-2 ${
+                  addedPulse
+                    ? "bg-emerald-500 text-obsidian shadow-lg shadow-emerald-500/30"
+                    : "gold-btn"
+                }`}
+              >
+                {addedPulse ? (
+                  <>✓ Agregado a Comanda</>
+                ) : (
+                  <>+ Ordenar Platillo</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==================== APLICACIÓN PRINCIPAL ====================
+    function App() {
+      const [auth, setAuth] = useState(() => {
+        try {
+          const saved = localStorage.getItem("aurelia_auth");
+          return saved ? JSON.parse(saved) : null;
+        } catch {
+          return null;
+        }
+      });
+
+      const [menu, setMenu] = useState([]);
+      const [loadingMenu, setLoadingMenu] = useState(false);
+      const [activeTab, setActiveTab] = useState("todos"); // "todos" | "platos_fuertes" | "postres" | "pedidos" | "openspec"
+      const [searchQuery, setSearchQuery] = useState("");
+
+      // Carrito de compras
+      const [cart, setCart] = useState([]);
+      const [cartOpen, setCartOpen] = useState(false);
+      const [serviceType, setServiceType] = useState("mesa");
+      const [tableOrAddress, setTableOrAddress] = useState("Mesa 07 · Terraza Botánica");
+      const [chefNotes, setChefNotes] = useState("");
+      const [tipPercentage, setTipPercentage] = useState(10);
+      const [paymentMethod, setPaymentMethod] = useState("Tarjeta Signature / Apple Pay");
+      const [submittingOrder, setSubmittingOrder] = useState(false);
+      const [orderSuccessModal, setOrderSuccessModal] = useState(null);
+
+      // Historial de pedidos en base de datos
+      const [orders, setOrders] = useState([]);
+      const [loadingOrders, setLoadingOrders] = useState(false);
+
+      // Información OpenSpec & DB
+      const [openSpecData, setOpenSpecData] = useState(null);
+
+      const handleAuthenticated = (authData) => {
+        setAuth(authData);
+        localStorage.setItem("aurelia_auth", JSON.stringify(authData));
+      };
+
+      const handleLogout = () => {
+        setAuth(null);
+        setCart([]);
+        localStorage.removeItem("aurelia_auth");
+      };
+
+      const fetchMenu = async () => {
+        setLoadingMenu(true);
+        try {
+          const res = await fetch("/api/v1/menu");
+          if (res.ok) {
+            const data = await res.json();
+            setMenu(data);
+          }
+        } catch (err) {
+          console.error("Error cargando menú:", err);
+        } finally {
+          setLoadingMenu(false);
+        }
+      };
+
+      const fetchMyOrders = async () => {
+        if (!auth?.access_token) return;
+        setLoadingOrders(true);
+        try {
+          const res = await fetch("/api/v1/orders/my", {
+            headers: { Authorization: `Bearer ${auth.access_token}` },
+          });
+          if (res.status === 401) {
+            handleLogout();
+            return;
+          }
+          if (res.ok) {
+            const data = await res.json();
+            setOrders(data);
+          }
+        } catch (err) {
+          console.error("Error cargando pedidos:", err);
+        } finally {
+          setLoadingOrders(false);
+        }
+      };
+
+      const fetchOpenSpec = async () => {
+        try {
+          const res = await fetch("/api/v1/openspec");
+          if (res.ok) {
+            const data = await res.json();
+            setOpenSpecData(data);
+          }
+        } catch (err) {
+          console.error("Error cargando OpenSpec:", err);
+        }
+      };
+
+      useEffect(() => {
+        if (auth) {
+          fetchMenu();
+          fetchMyOrders();
+          fetchOpenSpec();
+        }
+      }, [auth]);
+
+      // Agregar platillo al carrito
+      const handleAddToCart = (dish, quantity = 1, customNote = "") => {
+        setCart((prev) => {
+          const cleanNote = (customNote || "").trim();
+          const existingIndex = prev.findIndex(
+            (item) => item.dish.id === dish.id && item.customNote === cleanNote
+          );
+          if (existingIndex > -1) {
+            const updated = [...prev];
+            updated[existingIndex].quantity += quantity;
+            return updated;
+          }
+          return [...prev, { dish, quantity, customNote: cleanNote }];
+        });
+      };
+
+      const updateCartQuantity = (idx, delta) => {
+        setCart((prev) => {
+          const updated = [...prev];
+          const newQty = updated[idx].quantity + delta;
+          if (newQty <= 0) {
+            updated.splice(idx, 1);
+          } else {
+            updated[idx].quantity = newQty;
+          }
+          return updated;
+        });
+      };
+
+      const cartTotals = useMemo(() => {
+        const count = cart.reduce((acc, item) => acc + item.quantity, 0);
+        const subtotal = cart.reduce((acc, item) => acc + item.dish.price * item.quantity, 0);
+        const tax = subtotal * 0.16;
+        const tip = subtotal * (tipPercentage / 100);
+        const total = subtotal + tax + tip;
+        return { count, subtotal, tax, tip, total };
+      }, [cart, tipPercentage]);
+
+      const filteredMenu = useMemo(() => {
+        return menu.filter((item) => {
+          const matchesCategory =
+            activeTab === "todos" ||
+            activeTab === "pedidos" ||
+            activeTab === "openspec"
+              ? true
+              : item.category === activeTab;
+          const q = searchQuery.trim().toLowerCase();
+          const matchesSearch =
+            !q ||
+            item.name.toLowerCase().includes(q) ||
+            item.description.toLowerCase().includes(q) ||
+            item.subtitle.toLowerCase().includes(q) ||
+            item.badge.toLowerCase().includes(q);
+          return matchesCategory && matchesSearch;
+        });
+      }, [menu, activeTab, searchQuery]);
+
+      const platosFuertes = useMemo(
+        () => filteredMenu.filter((i) => i.category === "platos_fuertes"),
+        [filteredMenu]
+      );
+      const postres = useMemo(
+        () => filteredMenu.filter((i) => i.category === "postres"),
+        [filteredMenu]
+      );
+
+      // Enviar y guardar pedido en la Base de Datos SQLite
+      const handlePlaceOrder = async (e) => {
+        e.preventDefault();
+        if (cart.length === 0) return;
+        setSubmittingOrder(true);
+        try {
+          const payload = {
+            service_type: serviceType,
+            table_or_address: tableOrAddress,
+            chef_notes: chefNotes,
+            tip_percentage: tipPercentage,
+            payment_method: paymentMethod,
+            items: cart.map((c) => ({
+              menu_item_id: c.dish.id,
+              quantity: c.quantity,
+              custom_note: c.customNote,
+            })),
+          };
+          const res = await fetch("/api/v1/orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${auth.access_token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.detail || "No se pudo almacenar el pedido.");
+          }
+          setCart([]);
+          setChefNotes("");
+          setCartOpen(false);
+          setOrderSuccessModal(data);
+          fetchMyOrders();
+          fetchOpenSpec();
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          setSubmittingOrder(false);
+        }
+      };
+
+      const handleUpdateStatus = async (orderId, newStatus) => {
+        try {
+          const res = await fetch(
+            `/api/v1/orders/${orderId}/status?new_status=${encodeURIComponent(newStatus)}`,
+            {
+              method: "PATCH",
+              headers: { Authorization: `Bearer ${auth.access_token}` },
+            }
+          );
+          if (res.ok) {
+            fetchMyOrders();
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      if (!auth) {
+        return <AuthScreen onAuthenticated={handleAuthenticated} />;
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col bg-obsidian text-gray-100">
+          {/* ==================== BARRA DE NAVEGACIÓN ==================== */}
+          <header className="sticky top-0 z-40 glass-panel border-b border-gold-500/20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+              {/* Marca */}
+              <div
+                onClick={() => setActiveTab("todos")}
+                className="cursor-pointer flex items-center gap-3.5"
+              >
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-obsidian font-editorial font-bold text-2xl shadow-lg shadow-gold-500/20">
+                  T
+                </div>
+                <div>
+                  <span className="font-editorial text-2xl sm:text-3xl font-bold tracking-wider gold-gradient-text block leading-none">
+                    TERRAFOOD
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-gray-400 block mt-0.5">
+                    Fuego & Botánica
+                  </span>
+                </div>
+              </div>
+
+              {/* Pestañas Centrales */}
+              <nav className="hidden md:flex items-center gap-1.5 bg-black/40 p-1.5 rounded-2xl border border-white/10">
+                {[
+                  { id: "todos", label: "Carta Completa" },
+                  { id: "platos_fuertes", label: "🔥 Platos Fuertes" },
+                  { id: "postres", label: "🍯 Postres de Autor" },
+                  { id: "pedidos", label: `📋 Mis Pedidos (${orders.length})` },
+                  { id: "openspec", label: "⚡ OpenSpec & BD" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                      activeTab === tab.id
+                        ? "bg-gold-500 text-obsidian shadow"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+
+              {/* Usuario & Botón de Comanda */}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-xs font-semibold text-white">
+                    {auth.user.full_name}
+                  </span>
+                  <span className="text-[10px] text-gold-400">
+                    {auth.user.tier}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => setCartOpen(true)}
+                  className="relative px-4 py-2.5 rounded-xl gold-btn text-xs flex items-center gap-2 shadow-lg"
+                >
+                  <span>🍽️ Comanda</span>
+                  <span className="px-2 py-0.5 rounded-full bg-obsidian text-gold-400 font-bold text-xs">
+                    {cartTotals.count}
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  title="Cerrar sesión"
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 text-gray-400 hover:text-red-300 text-xs transition"
+                >
+                  Salir
+                </button>
+              </div>
+            </div>
+
+            {/* Navegación móvil */}
+            <div className="flex md:hidden overflow-x-auto px-4 py-2 gap-2 border-t border-white/5 bg-black/60">
+              {[
+                { id: "todos", label: "Todos" },
+                { id: "platos_fuertes", label: "🔥 Platos Fuertes" },
+                { id: "postres", label: "🍯 Postres" },
+                { id: "pedidos", label: `📋 Pedidos (${orders.length})` },
+                { id: "openspec", label: "⚡ OpenSpec" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap font-medium ${
+                    activeTab === tab.id
+                      ? "bg-gold-500 text-obsidian font-semibold"
+                      : "text-gray-400 bg-white/5"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </header>
+
+          {/* ==================== CONTENIDO PRINCIPAL ==================== */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* VISTA 1: MENÚ GASTRONÓMICO (TODOS / PLATOS FUERTES / POSTRES) */}
+            {(activeTab === "todos" || activeTab === "platos_fuertes" || activeTab === "postres") && (
+              <>
+                {/* Hero Banner */}
+                <div className="relative rounded-3xl overflow-hidden mb-10 border border-gold-500/25 shadow-2xl">
+                  <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{
+                      backgroundImage: `url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1800&q=80')`,
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-obsidian via-obsidian/90 to-obsidian/50" />
+
+                  <div className="relative z-10 p-8 md:p-12 max-w-2xl">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-300 text-xs uppercase tracking-widest mb-4">
+                      <span>Menú Degustación & Carta Otoño 2026</span>
+                    </div>
+                    <h1 className="font-editorial text-4xl sm:text-5xl font-bold text-white leading-tight">
+                      El arte del fuego lento y la alta repostería.
+                    </h1>
+                    <p className="text-gray-300 text-sm sm:text-base mt-3 leading-relaxed">
+                      Selecciona tus <strong className="text-gold-300">Platos Fuertes</strong> y{" "}
+                      <strong className="text-gold-300">Postres de Autor</strong>. Cada orden se registra
+                      instantáneamente en nuestra base de datos bajo especificación OpenSpec.
+                    </p>
+
+                    {/* Buscador y filtros rápidos */}
+                    <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Buscar Wagyu, Pulpo, Langosta, Pistacho, Chocolate..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-4 pr-10 py-3 rounded-xl bg-black/75 border border-gold-500/30 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-gold-400 backdrop-blur-md"
+                        />
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("pedidos")}
+                        className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-semibold uppercase tracking-wider text-gold-300 backdrop-blur-md transition"
+                      >
+                        Ver Mis Pedidos ({orders.length}) →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sección: Platos Fuertes */}
+                {(activeTab === "todos" || activeTab === "platos_fuertes") && (
+                  <section className="mb-14">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 pb-4 border-b border-white/10">
+                      <div>
+                        <span className="text-xs uppercase tracking-[0.25em] text-gold-400 font-semibold">
+                          De la Parilla de Encino & Cocina Principal
+                        </span>
+                        <h2 className="font-editorial text-3xl sm:text-4xl font-bold text-white mt-1">
+                          🔥 Platos Fuertes de Autor
+                        </h2>
+                      </div>
+                      <span className="text-xs text-gray-400 mt-2 sm:mt-0">
+                        Mostrando {platosFuertes.length} creaciones principales
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+                      {platosFuertes.map((dish) => (
+                        <DishCard key={dish.id} dish={dish} onAdd={handleAddToCart} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Sección: Postres de Autor */}
+                {(activeTab === "todos" || activeTab === "postres") && (
+                  <section className="mb-12">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 pb-4 border-b border-white/10">
+                      <div>
+                        <span className="text-xs uppercase tracking-[0.25em] text-rose-300 font-semibold">
+                          Obrador Dulce & Cacao Valrhona
+                        </span>
+                        <h2 className="font-editorial text-3xl sm:text-4xl font-bold text-white mt-1">
+                          🍯 Postres de Alta Repostería
+                        </h2>
+                      </div>
+                      <span className="text-xs text-gray-400 mt-2 sm:mt-0">
+                        Mostrando {postres.length} postres artesanales
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+                      {postres.map((dish) => (
+                        <DishCard key={dish.id} dish={dish} onAdd={handleAddToCart} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
+
+            {/* ==================== VISTA 2: HISTORIAL DE PEDIDOS ALMACENADOS ==================== */}
+            {activeTab === "pedidos" && (
+              <section className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
+                  <div>
+                    <span className="text-xs uppercase tracking-[0.2em] text-gold-400 font-semibold">
+                      Persistencia en Tiempo Real · SQLite3 (`aurelia_restaurant.db`)
+                    </span>
+                    <h2 className="font-editorial text-4xl font-bold text-white mt-1">
+                      📋 Mis Pedidos Registrados
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Cada pedido confirmado se almacena de forma permanente con su folio, desglose de platillos y notas.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("todos")}
+                    className="px-5 py-2.5 rounded-xl gold-btn text-xs uppercase tracking-wider self-start"
+                  >
+                    + Ordenar Más Platillos
+                  </button>
+                </div>
+
+                {loadingOrders ? (
+                  <div className="text-center py-16 text-gray-400">Cargando pedidos almacenados...</div>
+                ) : orders.length === 0 ? (
+                  <div className="glass-card rounded-3xl p-12 text-center max-w-xl mx-auto my-8">
+                    <div className="text-5xl mb-4">🍽️</div>
+                    <h3 className="font-editorial text-3xl font-bold text-white">
+                      Aún no has registrado ningún pedido
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-2 mb-6">
+                      Explora nuestra carta de Platos Fuertes y Postres de Autor, agrega tus favoritos a la comanda y confírmala para verla almacenada aquí.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("todos")}
+                      className="px-6 py-3 rounded-xl gold-btn text-xs uppercase tracking-wider"
+                    >
+                      Explorar Menú Ahora
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {orders.map((ord) => (
+                      <div
+                        key={ord.id}
+                        className="glass-card rounded-2xl p-6 border border-gold-500/25 shadow-xl"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <span className="px-3 py-1 rounded-lg bg-gold-500/20 border border-gold-500/40 text-gold-300 font-mono text-xs font-bold">
+                                Folio #{ord.folio}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                🕒 {ord.created_at}
+                              </span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-white/5 border border-white/10 text-gray-300 uppercase">
+                                {ord.service_type.replace("_", " ")}
+                              </span>
+                            </div>
+                            <div className="text-sm text-white font-medium mt-2">
+                              📍 Destino / Mesa: <span className="text-gold-300">{ord.table_or_address}</span>
+                              {ord.chef_notes && (
+                                <span className="ml-4 text-xs text-gray-400">
+                                  · Nota Cocina: “{ord.chef_notes}”
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Estado en cocina e interruptor interactivo */}
+                          <div className="flex flex-col sm:items-end gap-2">
+                            <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/15 border border-emerald-500/40 text-emerald-300">
+                              ● {ord.status}
+                            </span>
+                            <div className="flex items-center gap-1.5 text-[11px]">
+                              <span className="text-gray-500 mr-1">Simular avance:</span>
+                              {[
+                                "En preparación en cocina",
+                                "Emplatando por el Chef",
+                                "Servido en Mesa / Entregado",
+                              ].map((st) => (
+                                <button
+                                  key={st}
+                                  onClick={() => handleUpdateStatus(ord.id, st)}
+                                  className={`px-2 py-1 rounded border transition ${
+                                    ord.status === st
+                                      ? "bg-gold-500/25 border-gold-400 text-gold-300"
+                                      : "bg-black/40 border-white/10 text-gray-400 hover:text-white"
+                                  }`}
+                                >
+                                  {st.split(" ")[0]}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Lista de platillos del pedido */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
+                          {ord.items.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center gap-3.5 p-3 rounded-xl bg-black/40 border border-white/5"
+                            >
+                              <img
+                                src={item.image_url}
+                                alt={item.dish_name}
+                                onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
+                                className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold text-white truncate">
+                                  {item.quantity}x {item.dish_name}
+                                </div>
+                                <div className="text-[11px] text-gray-400">
+                                  Unitario: ${item.unit_price.toFixed(2)} USD
+                                  {item.custom_note && (
+                                    <span className="block text-gold-400 italic">
+                                      Nota: “{item.custom_note}”
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="font-editorial text-lg font-bold text-gold-400">
+                                ${item.line_total.toFixed(2)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Totales del pedido */}
+                        <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-gray-300">
+                          <div>
+                            Método de pago: <strong className="text-white">{ord.payment_method}</strong> · Comensal:{" "}
+                            <strong className="text-white">{ord.customer_name}</strong> ({ord.customer_email})
+                          </div>
+                          <div className="flex items-center gap-5">
+                            <span>Subtotal: ${ord.subtotal.toFixed(2)}</span>
+                            <span>IVA (16%): ${ord.tax.toFixed(2)}</span>
+                            <span>Propina: ${ord.tip.toFixed(2)}</span>
+                            <span className="font-editorial text-2xl font-bold text-gold-400">
+                              Total: ${ord.total.toFixed(2)} USD
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* ==================== VISTA 3: OPENSPEC & BASE DE DATOS EN VIVO ==================== */}
+            {activeTab === "openspec" && (
+              <section className="space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-white/10">
+                  <div>
+                    <span className="text-xs uppercase tracking-[0.2em] text-gold-400 font-semibold">
+                      Arquitectura Spec-Driven Development
+                    </span>
+                    <h2 className="font-editorial text-4xl font-bold text-white mt-1">
+                      ⚡ OpenSpec & Contrato OpenAPI 3.1
+                    </h2>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Especificaciones formales en <code>openspec/</code> sincronizadas con FastAPI, Pydantic v2 y SQLite3.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="/docs"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2.5 rounded-xl gold-btn text-xs uppercase tracking-wider"
+                    >
+                      Abrir Swagger UI (/docs) ↗
+                    </a>
+                    <a
+                      href="/redoc"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-semibold text-white"
+                    >
+                      Abrir ReDoc ↗
+                    </a>
+                  </div>
+                </div>
+
+                {openSpecData && (
+                  <>
+                    {/* Métricas en vivo de la Base de Datos */}
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                      <div className="glass-card p-5 rounded-2xl">
+                        <div className="text-xs text-gray-400">Base de Datos SQLite</div>
+                        <div className="font-mono text-sm text-gold-400 font-bold mt-1 truncate">
+                          {openSpecData.database_file}
+                        </div>
+                      </div>
+                      <div className="glass-card p-5 rounded-2xl">
+                        <div className="text-xs text-gray-400">Comensales Registrados</div>
+                        <div className="font-editorial text-3xl font-bold text-white mt-1">
+                          {openSpecData.metrics.registered_users}
+                        </div>
+                      </div>
+                      <div className="glass-card p-5 rounded-2xl">
+                        <div className="text-xs text-gray-400">Platos Fuertes / Postres</div>
+                        <div className="font-editorial text-3xl font-bold text-white mt-1">
+                          {openSpecData.metrics.platos_fuertes_count} / {openSpecData.metrics.postres_count}
+                        </div>
+                      </div>
+                      <div className="glass-card p-5 rounded-2xl">
+                        <div className="text-xs text-gray-400">Pedidos Almacenados</div>
+                        <div className="font-editorial text-3xl font-bold text-emerald-400 mt-1">
+                          {openSpecData.metrics.stored_orders}
+                        </div>
+                      </div>
+                      <div className="glass-card p-5 rounded-2xl">
+                        <div className="text-xs text-gray-400">Volumen Procesado</div>
+                        <div className="font-editorial text-3xl font-bold text-gold-400 mt-1">
+                          ${openSpecData.metrics.total_revenue_usd.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Visor de Especificaciones */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="glass-card rounded-2xl p-6">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-gold-400 mb-3">
+                          📄 openspec/specs/orders/spec.md (Requisitos & Escenarios)
+                        </h3>
+                        <pre className="text-xs text-gray-300 bg-black/60 p-4 rounded-xl overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed max-h-96">
+                          {openSpecData.artifacts.orders_spec_md}
+                        </pre>
+                      </div>
+                      <div className="glass-card rounded-2xl p-6">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-gold-400 mb-3">
+                          📜 openspec/openapi.yaml (Contrato OpenAPI 3.1.0)
+                        </h3>
+                        <pre className="text-xs text-emerald-300/90 bg-black/60 p-4 rounded-xl overflow-x-auto whitespace-pre font-mono leading-relaxed max-h-96">
+                          {openSpecData.artifacts.openapi_yaml}
+                        </pre>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+          </main>
+
+          {/* ==================== DRAWER LATERAL DE COMANDA / CARRITO ==================== */}
+          {cartOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end">
+              <div
+                className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+                onClick={() => setCartOpen(false)}
+              />
+              <div className="relative z-10 w-full max-w-lg bg-charcoal border-l border-gold-500/30 h-full flex flex-col justify-between shadow-2xl">
+                {/* Cabecera del Drawer */}
+                <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-gold-400 block">
+                      TERRAFOOD · Comanda Activa
+                    </span>
+                    <h3 className="font-editorial text-3xl font-bold text-white">
+                      Tu Selección Gastronómica
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setCartOpen(false)}
+                    className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Cuerpo del Carrito */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="text-4xl mb-3">🍷</div>
+                      <p className="text-gray-300 font-medium">Tu comanda está vacía</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Agrega Platos Fuertes o Postres de Autor desde la carta para realizar tu pedido.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Items */}
+                      <div className="space-y-3">
+                        {cart.map((item, idx) => (
+                          <div
+                            key={`${item.dish.id}-${idx}`}
+                            className="p-3.5 rounded-xl bg-black/50 border border-white/10 flex items-center gap-3.5"
+                          >
+                            <img
+                              src={item.dish.image_url}
+                              alt={item.dish.name}
+                              onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
+                              className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-semibold text-white truncate">
+                                {item.dish.name}
+                              </div>
+                              <div className="text-xs text-gold-400 font-semibold mt-0.5">
+                                ${(item.dish.price * item.quantity).toFixed(2)} USD
+                              </div>
+                              {item.customNote && (
+                                <div className="text-[11px] text-gray-400 italic truncate">
+                                  Nota: “{item.customNote}”
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 bg-obsidian px-2 py-1 rounded-lg border border-white/10">
+                              <button
+                                type="button"
+                                onClick={() => updateCartQuantity(idx, -1)}
+                                className="w-6 h-6 rounded text-gray-300 hover:bg-white/10"
+                              >
+                                -
+                              </button>
+                              <span className="text-xs font-bold w-4 text-center">
+                                {item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateCartQuantity(idx, 1)}
+                                className="w-6 h-6 rounded text-gold-400 hover:bg-white/10"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Opciones de Entrega / Mesa */}
+                      <form id="checkout-form" onSubmit={handlePlaceOrder} className="space-y-4 pt-4 border-t border-white/10">
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-2">
+                            Modalidad de Servicio
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: "mesa", label: "🍽️ En Mesa" },
+                              { id: "para_llevar", label: "🛍️ Pickup" },
+                              { id: "domicilio", label: "🛵 Domicilio" },
+                            ].map((m) => (
+                              <button
+                                type="button"
+                                key={m.id}
+                                onClick={() => {
+                                  setServiceType(m.id);
+                                  if (m.id === "mesa") setTableOrAddress("Mesa 07 · Terraza Botánica");
+                                  if (m.id === "para_llevar") setTableOrAddress("Mostrador Concierge Principal");
+                                  if (m.id === "domicilio") setTableOrAddress("Av. Masaryk 410, Polanco");
+                                }}
+                                className={`py-2 px-3 rounded-xl text-xs font-semibold border transition ${
+                                  serviceType === m.id
+                                    ? "bg-gold-500/20 border-gold-400 text-gold-300"
+                                    : "bg-black/40 border-white/10 text-gray-400"
+                                }`}
+                              >
+                                {m.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                            {serviceType === "mesa" ? "Número de Mesa / Salón" : "Dirección o Referencia de Entrega"}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={tableOrAddress}
+                            onChange={(e) => setTableOrAddress(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-gold-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                            Instrucciones Especiales para el Chef (Opcional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ej. Servir los postres 20 minutos después del plato fuerte..."
+                            value={chefNotes}
+                            onChange={(e) => setChefNotes(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-gold-400"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                              Propina Sugerida
+                            </label>
+                            <select
+                              value={tipPercentage}
+                              onChange={(e) => setTipPercentage(Number(e.target.value))}
+                              className="w-full px-3 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-gold-400"
+                            >
+                              <option value={0}>Sin propina (0%)</option>
+                              <option value={10}>10% Servicio Estándar</option>
+                              <option value={15}>15% Servicio Excelente</option>
+                              <option value={20}>20% Experiencia Michelin</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs uppercase tracking-wider text-gray-400 mb-1.5">
+                              Método de Pago
+                            </label>
+                            <select
+                              value={paymentMethod}
+                              onChange={(e) => setPaymentMethod(e.target.value)}
+                              className="w-full px-3 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-gold-400"
+                            >
+                              <option value="Tarjeta Signature / Apple Pay">Tarjeta Signature / Apple Pay</option>
+                              <option value="American Express Centurion">American Express Centurion</option>
+                              <option value="Cargo a Cuenta de Mesa">Cargo a Cuenta de Mesa</option>
+                            </select>
+                          </div>
+                        </div>
+                      </form>
+                    </>
+                  )}
+                </div>
+
+                {/* Pie del Carrito con Totales y Botón de Guardar Pedido */}
+                {cart.length > 0 && (
+                  <div className="p-6 bg-obsidian border-t border-gold-500/30 space-y-3">
+                    <div className="space-y-1 text-xs text-gray-400">
+                      <div className="flex justify-between">
+                        <span>Subtotal ({cartTotals.count} platillos)</span>
+                        <span className="text-gray-200">{formatCurrency(cartTotals.subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>IVA (16%)</span>
+                        <span className="text-gray-200">{formatCurrency(cartTotals.tax)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Propina ({tipPercentage}%)</span>
+                        <span className="text-gray-200">{formatCurrency(cartTotals.tip)}</span>
+                      </div>
+                      <div className="flex justify-between items-baseline pt-2 border-t border-white/10">
+                        <span className="text-sm font-bold text-white">Total a Pagar</span>
+                        <span className="font-editorial text-3xl font-bold text-gold-400">
+                          {formatCurrency(cartTotals.total)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      form="checkout-form"
+                      disabled={submittingOrder}
+                      className="w-full py-3.5 rounded-xl gold-btn text-xs uppercase tracking-wider shadow-xl"
+                    >
+                      {submittingOrder
+                        ? "Almacenando Pedido en Base de Datos..."
+                        : "✓ Confirmar y Guardar Pedido en Cocina"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ==================== MODAL DE CONFIRMACIÓN DE PEDIDO GUARDADO ==================== */}
+          {orderSuccessModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                onClick={() => setOrderSuccessModal(null)}
+              />
+              <div className="relative z-10 w-full max-w-lg glass-panel rounded-3xl p-8 border border-gold-500/40 shadow-2xl text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 flex items-center justify-center text-3xl mx-auto mb-4">
+                  ✓
+                </div>
+                <span className="px-3 py-1 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-300 text-xs font-mono">
+                  Folio Guardado: #{orderSuccessModal.folio}
+                </span>
+                <h3 className="font-editorial text-4xl font-bold text-white mt-3">
+                  ¡Tu pedido está en cocina!
+                </h3>
+                <p className="text-xs text-gray-300 mt-2 leading-relaxed">
+                  Hemos almacenado tu orden en la base de datos SQLite de <strong>TERRAFOOD</strong> para{" "}
+                  <span className="text-gold-300">{orderSuccessModal.table_or_address}</span>.
+                </p>
+
+                <div className="my-5 p-4 rounded-2xl bg-black/50 border border-white/10 text-left space-y-2 text-xs">
+                  {orderSuccessModal.items.map((it) => (
+                    <div key={it.id} className="flex justify-between text-gray-200">
+                      <span>
+                        {it.quantity}x {it.dish_name}
+                      </span>
+                      <span className="text-gold-400 font-semibold">${it.line_total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t border-white/10 flex justify-between font-bold text-sm text-white">
+                    <span>Total Registrado</span>
+                    <span className="text-gold-400">${orderSuccessModal.total.toFixed(2)} USD</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setOrderSuccessModal(null);
+                      setActiveTab("pedidos");
+                    }}
+                    className="flex-1 py-3 rounded-xl gold-btn text-xs uppercase tracking-wider"
+                  >
+                    Ver en Mis Pedidos Guardados
+                  </button>
+                  <button
+                    onClick={() => setOrderSuccessModal(null)}
+                    className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-xs text-gray-200"
+                  >
+                    Seguir Explorando
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ==================== FOOTER ==================== */}
+          <footer className="border-t border-white/10 py-8 px-4 text-center text-xs text-gray-500 mt-16">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <span className="font-editorial text-lg text-gold-400 font-bold mr-2">
+                  TERRAFOOD · Fuego & Botánica
+                </span>
+                <span>Alta Cocina Contemporánea</span>
+              </div>
+              <div>
+                Desarrollado con metodología <strong className="text-gray-300">Open Spec-Driven (OpenSpec + OpenAPI 3.1)</strong> · FastAPI · React 18 · SQLite3
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
