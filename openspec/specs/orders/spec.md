@@ -6,7 +6,7 @@ Almacenar de forma persistente e íntegra cada pedido realizado por un comensal 
 ## Requisitos
 
 ### Requirement: Creación y Persistencia de Pedido
-El sistema **SHALL** registrar en la base de datos todo pedido enviado por un usuario autenticado, guardando folio único (ej. `AUR-8492`), modalidad (`mesa`, `para_llevar`, `domicilio`), número de mesa o dirección, notas del chef, desglose de platillos con precio unitario congelado al momento de la compra y monto total.
+El sistema **SHALL** registrar en la base de datos todo pedido enviado por un usuario autenticado, guardando folio único (ej. `TF-8492`), modalidad (`mesa`, `para_llevar`, `domicilio`), número de mesa o dirección, notas del chef, desglose de platillos con precio unitario congelado al momento de la compra y monto total.
 
 #### Scenario: Confirmar un pedido con Platos Fuertes y Postres
 - **GIVEN** un comensal autenticado con platillos en su comanda

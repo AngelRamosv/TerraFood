@@ -7,7 +7,7 @@
 El proyecto se rige bajo **OpenSpec + OpenAPI 3.1 Contract-First**:
 1. **Especificación de Dominio (`openspec/specs/*/spec.md`)**: Define requisitos normativos (`SHALL`/`MUST`) y escenarios verificables (`WHEN` / `THEN`) antes de escribir código.
 2. **Contrato de API (`openspec/openapi.yaml`)**: Define esquemas JSON, rutas HTTP, códigos de estado y seguridad Bearer Token.
-3. **Implementación Validada (`backend/` & `frontend/`)**: El backend en **FastAPI + Pydantic v2** implementa estrictamente los esquemas del contrato y persiste los datos en **SQLite3** (`aurelia.db`).
+3. **Implementación Validada (`backend/` & `frontend/`)**: El backend en **FastAPI + Pydantic v2** implementa estrictamente los esquemas del contrato y persiste los datos en **SQLite3** (`terrafood_restaurant.db`).
 
 ## 3. Stack Tecnológico Moderno
 - **Especificaciones**: OpenSpec Markdown + OpenAPI 3.1.0

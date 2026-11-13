@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "aurelia_restaurant.db"
+DB_PATH = BASE_DIR / "terrafood_restaurant.db"
 
 
 def get_connection() -> sqlite3.Connection:
